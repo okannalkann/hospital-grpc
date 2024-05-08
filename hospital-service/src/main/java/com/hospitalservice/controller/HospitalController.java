@@ -18,16 +18,33 @@ public class HospitalController {
     private final HospitalService hospitalService;
 
     @PostMapping
-    public ResponseEntity<Hospital> create(@RequestBody HospitalDTO hospital){
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(
-                        hospitalService.add(hospital)
-                );
+    public ResponseEntity<Hospital> create(@RequestBody HospitalDTO hospitalDTO) {
+        Hospital hospital = hospitalService.add(hospitalDTO);
+        return ResponseEntity.status(201).body(hospital);
     }
 
     @GetMapping
-    public ResponseEntity<List<Hospital>> getAll(){
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(hospitalService.getAll());
+    public ResponseEntity<List<Hospital>> getAll() {
+        List<Hospital> hospitals = hospitalService.getAll();
+        return ResponseEntity.ok(hospitals);
+    }
+
+
+    @PutMapping("{id}")
+    public ResponseEntity<Hospital> update(@PathVariable int id, @RequestBody HospitalDTO hospitalDTO) {
+        Hospital updatedHospital = hospitalService.update(id, hospitalDTO);
+        if (updatedHospital == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(updatedHospital);
+    }
+
+    @DeleteMapping("{id}")
+    public ResponseEntity<Void> delete(@PathVariable int id) {
+        boolean deleted = hospitalService.delete(id);
+        if (!deleted) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok().build();
     }
 }
