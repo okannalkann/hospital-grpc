@@ -1,13 +1,10 @@
 package com.hospitalservice.model;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.List;
 
 @Entity
 @Getter
@@ -32,7 +29,4 @@ public class Hospital {
 
     @Column(name="capacity")
     private int capacity;
-
-    @OneToMany(mappedBy = "hospital")
-    private List<HospitalPatient> patients;
 }

@@ -12,11 +12,11 @@ import healthcare.HospitalServiceGrpc;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,6 +53,15 @@ public class PatientService {
         return patientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
     }
+
+    public Optional<Patient> findByEmailOrPhone(String email, String phone) {
+        return patientRepository.findByEmailOrPhone(email, phone);
+    }
+
+    public boolean isRegistrationExists(int patientId, int hospitalId) {
+        return hospitalPatientRepository.findByPatientIdAndHospitalId(patientId, hospitalId).isPresent();
+    }
+
 
     @Transactional
     public Patient update(int id, PatientDTO patientDTO) {
@@ -106,31 +115,24 @@ public class PatientService {
         }
     }
 
-    private Hospital convertToHospitalEntity(HospitalResponse2 hospitalResponse2) {
+    private HospitalResponseDTO convertToHospitalEntity(HospitalResponse2 hospitalResponse2) {
         try {
-            Hospital hospital = new Hospital();
-            hospital.setName(hospitalResponse2.getName());
-            hospital.setAddress(hospitalResponse2.getAddress());
-            hospital.setPhone(hospitalResponse2.getPhone());
-            hospital.setCapacity(hospitalResponse2.getCapactiy());
-
-            return hospital;
+            return new HospitalResponseDTO(hospitalResponse2.getHospitalId(), hospitalResponse2.getName(), hospitalResponse2.getAddress(), hospitalResponse2.getPhone(), hospitalResponse2.getCapacity());
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to save patient", e);
         }
     }
 
-
     private HospitalPatient convertToHospitalPatientDto(HospitalPatientDTO hospitalpatientDTO) {
         try {
-            Patient patient = getById(hospitalpatientDTO.getPatient());
+            Patient patient = getById(hospitalpatientDTO.getPatientId());
 
-            HospitalResponse2 getHospital = getHospital(hospitalpatientDTO.getHospital());
-            Hospital hospital = convertToHospitalEntity(getHospital);
+            HospitalResponse2 getHospital = getHospital(hospitalpatientDTO.getHospitalId());
+            HospitalResponseDTO hospital = convertToHospitalEntity(getHospital);
 
             HospitalPatient hospitalpatient = new HospitalPatient();
             hospitalpatient.setId(hospitalpatientDTO.getId());
-            hospitalpatient.setHospital(hospital);
+            hospitalpatient.setHospitalId(getHospital.getHospitalId());
             hospitalpatient.setPatient(patient);
             hospitalpatient.setDateRegistered(hospitalpatientDTO.getDateRegistered());
             hospitalpatient.setDateDischarged(hospitalpatientDTO.getDateDischarged());
@@ -141,19 +143,20 @@ public class PatientService {
         }
     }
 
-    public HospitalPatientDTO registerHospital(HospitalPatientDTO hospitalPatientDTO){
-        Patient patient = getById(hospitalPatientDTO.getPatient());
-        HospitalResponse checkHospital = checkHospitalExists(hospitalPatientDTO.getHospital());
-
-        if(checkHospital.getExists() && patient != null){
-            //patient mevcutsa kontrolü, mevcut olduğunu bildir
-             System.out.print(patient.getHospitalsVisited());
-            //hospital tablosuna da de hastayı ekleme
-            HospitalPatient hospitalpatient = convertToHospitalPatientDto(hospitalPatientDTO);
-            hospitalPatientRepository.save(hospitalpatient);
-            return hospitalPatientDTO;
-        }else{
-            return null; //patient ya da hastane yok
+    public HospitalPatientDTO registerHospital(HospitalPatientDTO hospitalPatientDTO) throws Exception{
+        Patient patient = getById(hospitalPatientDTO.getPatientId());
+        if(patient == null){
+                throw new Exception("Patient not found with ID: " + hospitalPatientDTO.getPatientId());
         }
+        HospitalResponse checkHospital = checkHospitalExists(hospitalPatientDTO.getHospitalId());
+        if (!checkHospital.getExists()) {
+            throw new Exception("Hospital not found with ID: " + hospitalPatientDTO.getHospitalId());
+        }
+
+        HospitalResponse2 getHospital = getHospital(hospitalPatientDTO.getHospitalId());
+
+        HospitalPatient hospitalpatient = convertToHospitalPatientDto(hospitalPatientDTO);
+        hospitalPatientRepository.save(hospitalpatient);
+        return hospitalPatientDTO;
     }
 }

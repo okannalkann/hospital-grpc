@@ -11,8 +11,8 @@ import java.util.Date;
 @Setter
 public class HospitalPatientDTO {
     private int id;
-    private int patient;
-    private int hospital;
+    private int patientId;
+    private int hospitalId;
     private Date dateRegistered;
     private Date dateDischarged;
 }

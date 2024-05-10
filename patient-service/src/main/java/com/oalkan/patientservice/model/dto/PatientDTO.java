@@ -1,12 +1,8 @@
 package com.oalkan.patientservice.model.dto;
 
-import com.oalkan.patientservice.model.HospitalPatient;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Date;
-import java.util.List;
 
 @Builder
 @Getter

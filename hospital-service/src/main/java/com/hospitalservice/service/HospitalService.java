@@ -5,7 +5,6 @@ import com.hospitalservice.model.Hospital;
 import com.hospitalservice.repository.HospitalRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -54,6 +53,10 @@ public class HospitalService {
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to retrieve hospitals", e);
         }
+    }
+
+    public HospitalDTO getById(int id) {
+        return null;
     }
 
     private Hospital convertToEntity(HospitalDTO hospitalDTO) {

@@ -4,16 +4,17 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
-
 @Builder
 @Getter
 @Setter
-public class HospitalDTO {
+public class PatientDTO {
     private int id;
-    private String name;
+    private String firstname;
+    private String lastname;
+    private String dateofbirth;
+    private String gender;
     private String address;
     private String phone;
-    private int capacity;
-    private List<PatientDTO> patients;
+    private String email;
+    private String emergencycontact;
 }

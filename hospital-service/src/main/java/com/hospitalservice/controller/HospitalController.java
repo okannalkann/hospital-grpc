@@ -4,7 +4,6 @@ import com.hospitalservice.model.dto.HospitalDTO;
 import com.hospitalservice.model.Hospital;
 import com.hospitalservice.service.HospitalService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +26,12 @@ public class HospitalController {
     public ResponseEntity<List<Hospital>> getAll() {
         List<Hospital> hospitals = hospitalService.getAll();
         return ResponseEntity.ok(hospitals);
+    }
+
+    @GetMapping("{id}")
+    public ResponseEntity<HospitalDTO> getHospital(@PathVariable int id) {
+        HospitalDTO hospital = hospitalService.getById(id);
+        return ResponseEntity.ok(hospital);
     }
 
 

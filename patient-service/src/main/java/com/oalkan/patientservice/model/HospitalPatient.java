@@ -21,19 +21,17 @@ public class HospitalPatient {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @ManyToOne(fetch=FetchType.EAGER, cascade=CascadeType.ALL)
-    @JsonBackReference
-    @JoinColumn(name = "patient_id", nullable = false)
-    private Patient patient;
-
-    @ManyToOne(fetch=FetchType.EAGER, cascade=CascadeType.ALL)
-    @JsonBackReference
-    @JoinColumn(name = "hospital_id", nullable = false)
-    private Hospital hospital;
+    @Column(name="hospital_id")
+    private Integer hospitalId;
 
     @Column(name = "date_registered")
     private Date dateRegistered;
 
     @Column(name = "date_discharged", nullable = true)
     private Date dateDischarged;
+
+    @ManyToOne(fetch=FetchType.EAGER, cascade=CascadeType.ALL)
+    @JsonBackReference
+    @JoinColumn(name = "patient_id", nullable = false)
+    private Patient patient;
 }

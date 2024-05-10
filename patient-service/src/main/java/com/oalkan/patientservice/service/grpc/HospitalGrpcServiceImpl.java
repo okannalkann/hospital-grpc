@@ -1,9 +1,6 @@
 package com.oalkan.patientservice.service.grpc;
 
-import healthcare.HospitalRequest;
-import healthcare.HospitalResponse;
-import healthcare.HospitalResponse2;
-import healthcare.HospitalServiceGrpc;
+import healthcare.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,14 +22,12 @@ public class HospitalGrpcServiceImpl implements HospitalGrpcService {
     @Override
     public HospitalResponse checkHospitalExists(HospitalRequest hospitalId) {
         hospitalServiceStub = HospitalServiceGrpc.newBlockingStub(channel);
-        HospitalResponse hospitalResponse = hospitalServiceStub.checkHospitalExists(hospitalId);
-        return hospitalResponse;
+        return hospitalServiceStub.checkHospitalExists(hospitalId);
     }
 
     @Override
     public HospitalResponse2 GetHospital(HospitalRequest hospitalId) {
         hospitalServiceStub = HospitalServiceGrpc.newBlockingStub(channel);
-        HospitalResponse2 hospitalResponse = hospitalServiceStub.getHospital(hospitalId);
-        return hospitalResponse;
+        return hospitalServiceStub.getHospital(hospitalId);
     }
 }

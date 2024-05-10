@@ -1,6 +1,5 @@
 package com.oalkan.patientservice.controller;
 
-import com.oalkan.patientservice.model.HospitalPatient;
 import com.oalkan.patientservice.model.Patient;
 import com.oalkan.patientservice.model.dto.*;
 import com.oalkan.patientservice.service.PatientService;
@@ -12,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -20,9 +20,15 @@ public class PatientController {
     private final PatientService patientService;
 
     @PostMapping
-    public ResponseEntity<Patient> create(@RequestBody PatientDTO patientDTO) {
+    public ResponseEntity<?> create(@RequestBody PatientDTO patientDTO) {
+        Optional<Patient> existingPatient = patientService.findByEmailOrPhone(patientDTO.getEmail(), patientDTO.getPhone());
+
+        if (existingPatient.isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Patient with given email or phone already exists.");
+        }
+
         Patient patient = patientService.add(patientDTO);
-        return ResponseEntity.status(201).body(patient);
+        return ResponseEntity.status(HttpStatus.CREATED).body(patient);
     }
 
     @GetMapping
@@ -32,11 +38,13 @@ public class PatientController {
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<Patient> getPatientById(@PathVariable int id) {
+    public ResponseEntity<Patient> getPatientById(@PathVariable int id) throws Exception {
         Patient patient = patientService.getById(id);
+
         if(patient == null) {
             return ResponseEntity.notFound().build();
         }
+
         return ResponseEntity.ok(patient);
     }
 
@@ -76,18 +84,23 @@ public class PatientController {
                         .name(hospitalResponse.getName())
                         .address(hospitalResponse.getAddress())
                         .phone(hospitalResponse.getPhone())
-                        .capacity(hospitalResponse.getCapactiy())
+                        .capacity(hospitalResponse.getCapacity())
                         .build()
         );
     }
 
     @PostMapping("/register")
-    public ResponseEntity<HospitalPatientDTO> registerHospital(@RequestBody HospitalPatientDTO hospitalPatientDTO) {
-        HospitalPatientDTO patientResponse = patientService.registerHospital(hospitalPatientDTO);
+    public ResponseEntity<?> registerHospital(@RequestBody HospitalPatientDTO hospitalPatientDTO) throws Exception {
+        boolean exists = patientService.isRegistrationExists(hospitalPatientDTO.getPatientId(), hospitalPatientDTO.getHospitalId());
 
-        if (patientResponse == null) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(patientResponse);
+        if (exists) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("This patient is already registered in this hospital.");
         }
-        return ResponseEntity.status(201).body(patientResponse);
+
+        HospitalPatientDTO patientResponse = patientService.registerHospital(hospitalPatientDTO);
+        if (patientResponse == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unable to register patient in hospital");
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(patientResponse);
     }
 }
