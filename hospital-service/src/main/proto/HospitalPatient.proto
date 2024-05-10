@@ -1,56 +1,25 @@
 syntax = "proto3";
 option java_multiple_files= true;
-package com.oalkan.grpc;
 
-import "google/protobuf/empty.proto";
+package healthcare;
 
-// Define services for hospital and patient management
 service HospitalService {
-  rpc CreateHospital(Hospital) returns (Hospital);
-  rpc ModifyHospital(Hospital) returns (Hospital);
-  rpc DeleteHospital(IdRequest) returns (google.protobuf.Empty);
-
-  rpc RegisterPatientInHospital(PatientHospitalLink) returns (google.protobuf.Empty);
-  rpc ListPatientsByHospital(IdRequest) returns (PatientList);
-  rpc ListHospitalsByPatient(IdRequest) returns (HospitalList);
+  rpc CheckHospitalExists(HospitalRequest) returns (HospitalResponse);
+  rpc GetHospital(HospitalRequest) returns (HospitalResponse2);
 }
 
-service PatientService {
-  rpc CreatePatient(Patient) returns (Patient);
-  rpc ModifyPatient(Patient) returns (Patient);
-  rpc DeletePatient(IdRequest) returns (google.protobuf.Empty);
+message HospitalRequest {
+  int32 hospital_id = 1;
 }
 
-// Define message formats for requests and responses
-message Hospital {
-  int32 id = 1;  // Hospital ID (0 when creating a new hospital)
+message HospitalResponse {
+  bool exists = 1;
+}
+
+message HospitalResponse2 {
+  bool exists = 1;
   string name = 2;
   string address = 3;
   string phone = 4;
-  int32 capacity = 5;
-}
-
-message Patient {
-  int32 id = 1;  // Patient ID (0 when creating a new patient)
-  string first_name = 2;
-  string last_name = 3;
-  string date_of_birth = 4;  // Format: YYYY-MM-DD
-  string gender = 5;
-}
-
-message PatientHospitalLink {
-  int32 patient_id = 1;
-  int32 hospital_id = 2;
-}
-
-message IdRequest {
-  int32 id = 1;  // Generic ID request for deleting or retrieving specific records
-}
-
-message PatientList {
-  repeated Patient patients = 1;
-}
-
-message HospitalList {
-  repeated Hospital hospitals = 1;
+  int32 capactiy = 5;
 }

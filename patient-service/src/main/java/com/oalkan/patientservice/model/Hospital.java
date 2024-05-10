@@ -1,4 +1,4 @@
-package com.oalkan.patientservice.entity;
+package com.oalkan.patientservice.model;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -33,7 +33,7 @@ public class Hospital {
     @Column(name="capacity")
     private int capacity;
 
-    @OneToMany(mappedBy = "hospital", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "hospital", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<Patient> patients;
+    private List<HospitalPatient> registeredPatients;
 }

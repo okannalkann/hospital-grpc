@@ -34,5 +34,5 @@ public class Hospital {
     private int capacity;
 
     @OneToMany(mappedBy = "hospital")
-    private List<HospitalPatient> registeredPatients;
+    private List<HospitalPatient> patients;
 }

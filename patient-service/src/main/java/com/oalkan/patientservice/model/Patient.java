@@ -1,20 +1,26 @@
-package com.oalkan.patientservice.entity;
-
+package com.oalkan.patientservice.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.Date;
+import java.util.List;
 
 @Entity
 @Getter
 @Setter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Table(name="patients")
 public class Patient {
     @Id
+    @Column(name="Id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private int id;
 
     @Column(name="firstname")
     private String firstname;
@@ -40,8 +46,7 @@ public class Patient {
     @Column(name="emergencycontact")
     private String emergencycontact;
 
-    @ManyToOne
-    @JoinColumn(name="hospital_id")
-    @JsonBackReference
-    private Hospital hospital;
+    @OneToMany(mappedBy = "patient",cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<HospitalPatient> hospitalsVisited;
 }
