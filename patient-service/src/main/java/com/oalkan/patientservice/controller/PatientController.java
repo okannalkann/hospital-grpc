@@ -1,7 +1,6 @@
 package com.oalkan.patientservice.controller;
 
 import com.oalkan.patientservice.exception.AlreadyExistsException;
-import com.oalkan.patientservice.exception.EntityNotFoundException;
 import com.oalkan.patientservice.exception.HospitalNotFoundException;
 import com.oalkan.patientservice.exception.NotFoundException;
 import com.oalkan.patientservice.model.Patient;
@@ -93,7 +92,7 @@ public class PatientController {
     }
 
     @GetMapping("/hospitalcheck/{hospitalId}")
-    public ResponseEntity<HospitalCheckResponseDTO> checkHospital2(@PathVariable int hospitalId) {
+    public ResponseEntity<HospitalCheckResponseDTO> checkHospitalExist(@PathVariable int hospitalId) {
         HospitalResponse hospitalResponse = patientService.checkHospitalExists(hospitalId);
 
         if (hospitalResponse == null) {
