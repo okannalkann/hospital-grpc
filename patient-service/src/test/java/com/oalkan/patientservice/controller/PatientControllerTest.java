@@ -2,7 +2,6 @@ package com.oalkan.patientservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oalkan.patientservice.model.Patient;
-import com.oalkan.patientservice.model.dto.HospitalPatientDTO;
 import com.oalkan.patientservice.model.dto.PatientDTO;
 import com.oalkan.patientservice.service.PatientService;
 import healthcare.HospitalResponse;
@@ -42,7 +41,6 @@ public class PatientControllerTest {
 
         given(patientService.getById(1)).willReturn(patient);
 
-        // Act & Assert
         mockMvc.perform(get("/api/patient/{id}", 1))
                 .andExpect(status().isOk());
     }
@@ -73,7 +71,7 @@ public class PatientControllerTest {
                         .content(new ObjectMapper().writeValueAsString(patientDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
-                .andDo(MockMvcResultHandlers.print())  // Bu satır, istek ve yanıt detaylarını konsola yazdırır
+                .andDo(MockMvcResultHandlers.print())
                 .andExpect(jsonPath("$.data.id").value(1));
     }
 
@@ -83,10 +81,9 @@ public class PatientControllerTest {
         int patientId = 1;
         when(patientService.delete(patientId)).thenReturn(true);
 
-        // Act & Assert
         mockMvc.perform(delete("/api/patient/{id}", patientId)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andDo(MockMvcResultHandlers.print())  // Bu satır, istek ve yanıt detaylarını konsola yazdırır
+                .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true));
 

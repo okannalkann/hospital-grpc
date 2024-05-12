@@ -33,9 +33,17 @@ public class HospitalController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Hospital>> getAll() {
-        List<Hospital> hospitals = hospitalService.getAll();
-        return ResponseEntity.ok(hospitals);
+    public ResponseEntity<ApiResponse> getAll() {
+        try {
+            List<Hospital> hospitals = hospitalService.getAll();
+            return ResponseEntity.ok(new ApiResponse(true, "Hospitals found", hospitals));
+        } catch (HospitalNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse(false, "Hospitals not found"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse(false, "Internal server error"));
+        }
     }
 
     @GetMapping("{id}")
