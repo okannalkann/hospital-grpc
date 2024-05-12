@@ -51,9 +51,15 @@ public class HospitalGrpcServiceImpl extends HospitalServiceGrpc.HospitalService
                         .build();
                 responseObserver.onNext(response);
             }
+
+            if(hospital.isEmpty()) {
+                throw new Exception("Hospital not found by: " + request.getHospitalId());
+            }
+
         } catch (Exception e) {
-            responseObserver.onError(Status.INTERNAL.withDescription("Internal server error: " + e.getMessage()).asRuntimeException());
-        } finally {
+            responseObserver.onError(Status.ABORTED.withDescription(e.getMessage()).asRuntimeException());
+        }
+        finally {
             responseObserver.onCompleted();
         }
     }

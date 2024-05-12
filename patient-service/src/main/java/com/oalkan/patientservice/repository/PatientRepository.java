@@ -1,6 +1,5 @@
 package com.oalkan.patientservice.repository;
 
-import com.oalkan.patientservice.model.HospitalPatient;
 import com.oalkan.patientservice.model.Patient;
 import org.springframework.data.jpa.repository.JpaRepository;
 

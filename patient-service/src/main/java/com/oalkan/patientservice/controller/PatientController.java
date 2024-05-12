@@ -1,7 +1,12 @@
 package com.oalkan.patientservice.controller;
 
+import com.oalkan.patientservice.exception.AlreadyExistsException;
+import com.oalkan.patientservice.exception.EntityNotFoundException;
+import com.oalkan.patientservice.exception.HospitalNotFoundException;
+import com.oalkan.patientservice.exception.NotFoundException;
 import com.oalkan.patientservice.model.Patient;
 import com.oalkan.patientservice.model.dto.*;
+import com.oalkan.patientservice.response.ApiResponse;
 import com.oalkan.patientservice.service.PatientService;
 import healthcare.HospitalResponse;
 import healthcare.HospitalResponse2;
@@ -20,55 +25,81 @@ public class PatientController {
     private final PatientService patientService;
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody PatientDTO patientDTO) {
+    public ResponseEntity<ApiResponse> create(@RequestBody PatientDTO patientDTO) {
         Optional<Patient> existingPatient = patientService.findByEmailOrPhone(patientDTO.getEmail(), patientDTO.getPhone());
 
         if (existingPatient.isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Patient with given email or phone already exists.");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse(false, "Patient with given email or phone already exists.", null));
         }
 
-        Patient patient = patientService.add(patientDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(patient);
+        try {
+            Patient patient = patientService.add(patientDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse(true, "Patient created successfully", patient));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ApiResponse(false, "Failed to create patient", null));
+        }
     }
 
     @GetMapping
-    public ResponseEntity<List<Patient>> getAll() {
-        List<Patient> patients = patientService.getAll();
-        return ResponseEntity.ok(patients);
+    public ResponseEntity<ApiResponse> getAll() {
+        try {
+            List<Patient> patients = patientService.getAll();
+            if (patients.isEmpty()) {
+                return ResponseEntity.ok(new ApiResponse(true, "No patients found", patients));
+            }
+            return ResponseEntity.ok(new ApiResponse(true, "Patients retrieved successfully", patients));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ApiResponse(false, "Failed to retrieve patients", null));
+        }
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<Patient> getPatientById(@PathVariable int id) throws Exception {
-        Patient patient = patientService.getById(id);
-
-        if(patient == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<ApiResponse> getPatientById(@PathVariable int id) {
+        try {
+            Patient patient = patientService.getById(id);
+            return ResponseEntity.ok(new ApiResponse(true, "Patient found", patient));
+        } catch (HospitalNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse(false, "Patient not found"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse(false, "Internal server error"));
         }
-
-        return ResponseEntity.ok(patient);
     }
 
     @PutMapping("{id}")
-    public ResponseEntity<Patient> update(@PathVariable int id, @RequestBody PatientDTO patientDTO) {
-        Patient updatedPatient = patientService.update(id, patientDTO);
-        if (updatedPatient == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<ApiResponse> update(@PathVariable int id, @RequestBody PatientDTO patientDTO) {
+        try {
+            Patient updatedPatient = patientService.update(id, patientDTO);
+            return ResponseEntity.ok(new ApiResponse(true, "Patient updated", updatedPatient));
+        } catch (HospitalNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse(false, "Patient not found"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse(false, "Internal server error"));
         }
-        return ResponseEntity.ok(updatedPatient);
     }
 
     @DeleteMapping("{id}")
-    public ResponseEntity<Void> delete(@PathVariable int id) {
+    public ResponseEntity<ApiResponse> delete(@PathVariable int id) {
         boolean deleted = patientService.delete(id);
         if (!deleted) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse(false, "Patient not found"));
         }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse(true, "Patient deleted successfully"));
     }
 
     @GetMapping("/hospitalcheck/{hospitalId}")
     public ResponseEntity<HospitalCheckResponseDTO> checkHospital2(@PathVariable int hospitalId) {
         HospitalResponse hospitalResponse = patientService.checkHospitalExists(hospitalId);
+
+        if (hospitalResponse == null) {
+            throw new HospitalNotFoundException("Hospital with ID " + hospitalId + " not found");
+        }
+
         return ResponseEntity.ok(
                 HospitalCheckResponseDTO.builder()
                         .exist(hospitalResponse.getExists())
@@ -76,31 +107,49 @@ public class PatientController {
         );
     }
 
-    @GetMapping("/getHospital/{hospitalId}")
-    public ResponseEntity<HospitalResponseDTO> getHospital(@PathVariable int hospitalId) {
-        HospitalResponse2 hospitalResponse = patientService.getHospital(hospitalId);
-        return ResponseEntity.ok(
-                HospitalResponseDTO.builder()
-                        .name(hospitalResponse.getName())
-                        .address(hospitalResponse.getAddress())
-                        .phone(hospitalResponse.getPhone())
-                        .capacity(hospitalResponse.getCapacity())
-                        .build()
-        );
-    }
-
     @PostMapping("/register")
     public ResponseEntity<?> registerHospital(@RequestBody HospitalPatientDTO hospitalPatientDTO) throws Exception {
-        boolean exists = patientService.isRegistrationExists(hospitalPatientDTO.getPatientId(), hospitalPatientDTO.getHospitalId());
+        Patient patient = patientService.findPatientById(hospitalPatientDTO.getPatientId());
+        if (patient == null) {
+            throw new NotFoundException("Patient not found.");
+        }
 
+        HospitalResponse hospital = patientService.checkHospitalExists(hospitalPatientDTO.getHospitalId());
+        if (!hospital.getExists()) {
+            throw new NotFoundException("Hospital not found.");
+        }
+
+        boolean exists = patientService.isRegistrationExists(hospitalPatientDTO.getPatientId(), hospitalPatientDTO.getHospitalId());
         if (exists) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("This patient is already registered in this hospital.");
+            throw new AlreadyExistsException("This patient is already registered in this hospital.");
         }
 
         HospitalPatientDTO patientResponse = patientService.registerHospital(hospitalPatientDTO);
         if (patientResponse == null) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unable to register patient in hospital");
+            throw new RuntimeException("Unable to register patient in hospital");
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(patientResponse);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse(true, "Patient is successfully saved", patientResponse));
+    }
+
+    @GetMapping("/getHospitalPatients/{hospitalId}")
+    public ResponseEntity<HospitalResponseDTO> getHospitalPatients(@PathVariable int hospitalId) {
+        HospitalResponse2 hospitalResponse = patientService.getHospital(hospitalId);
+
+        if (hospitalResponse == null) {
+            throw new HospitalNotFoundException("Hospital with ID " + hospitalId + " not found");
+        }
+
+        List<PatientDTO> patients = patientService.getPatientsByHospitalId(hospitalId);
+        return ResponseEntity.ok(
+                HospitalResponseDTO.builder()
+                        .hospitalId(hospitalId)
+                        .name(hospitalResponse.getName())
+                        .address(hospitalResponse.getAddress())
+                        .phone(hospitalResponse.getPhone())
+                        .capacity(hospitalResponse.getCapacity())
+                        .patients(patients)
+                        .build()
+        );
     }
 }

@@ -10,7 +10,6 @@ import java.util.Date;
 @Getter
 @Setter
 public class HospitalPatientDTO {
-    private int id;
     private int patientId;
     private int hospitalId;
     private Date dateRegistered;

@@ -1,5 +1,6 @@
 package com.oalkan.patientservice.service;
 
+import com.oalkan.patientservice.exception.EntityNotFoundException;
 import com.oalkan.patientservice.model.*;
 import com.oalkan.patientservice.model.dto.*;
 import com.oalkan.patientservice.repository.HospitalPatientRepository;
@@ -9,36 +10,43 @@ import healthcare.HospitalRequest;
 import healthcare.HospitalResponse;
 import healthcare.HospitalResponse2;
 import healthcare.HospitalServiceGrpc;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class PatientService {
-    private HospitalServiceGrpc.HospitalServiceBlockingStub hospitalServiceStub;
-
     private final PatientRepository patientRepository;
     private final HospitalPatientRepository hospitalPatientRepository;
     private final HospitalGrpcService hospitalGrpcService;
 
     public HospitalResponse checkHospitalExists(int hospitalId) {
-        HospitalRequest hospitalRequest = HospitalRequest.newBuilder()
-                .setHospitalId(hospitalId)
-                .build();
-        return hospitalGrpcService.checkHospitalExists(hospitalRequest);
+        try {
+            HospitalRequest hospitalRequest = HospitalRequest.newBuilder()
+                    .setHospitalId(hospitalId)
+                    .build();
+            return hospitalGrpcService.checkHospitalExists(hospitalRequest);
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to check hospital", e);
+        }
     }
 
     public HospitalResponse2 getHospital(int hospitalId) {
-        HospitalRequest hospitalRequest = HospitalRequest.newBuilder()
-                .setHospitalId(hospitalId)
-                .build();
-        return hospitalGrpcService.GetHospital(hospitalRequest);
+        try {
+            HospitalRequest hospitalRequest = HospitalRequest.newBuilder()
+                    .setHospitalId(hospitalId)
+                    .build();
+
+            return hospitalGrpcService.GetHospital(hospitalRequest);
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to retrieve hospitals", e);
+        }
     }
 
     public List<Patient> getAll() {
@@ -54,54 +62,112 @@ public class PatientService {
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
     }
 
+    public Patient findPatientById(int id) {
+        return patientRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+    }
+
+    public List<PatientDTO> getPatientsByHospitalId(int hospitalId) {
+        try {
+            List<HospitalPatient> hospitalPatients = hospitalPatientRepository.findByHospitalId(hospitalId);
+            return hospitalPatients.stream()
+                    .map(hospitalPatient -> findPatientById(hospitalPatient.getId()))
+                    .filter(Objects::nonNull)
+                    .map(this::convertToPatientDTO)
+                    .collect(Collectors.toList());
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Hospital not found", e);
+        }
+    }
+
+    private PatientDTO convertToPatientDTO(Patient patient) {
+        return PatientDTO.builder()
+                .id(patient.getId())
+                .firstname(patient.getFirstname())
+                .lastname(patient.getLastname())
+                .dateofbirth(patient.getDateofbirth())
+                .gender(patient.getGender())
+                .address(patient.getAddress())
+                .phone(patient.getPhone())
+                .email(patient.getEmail())
+                .emergencycontact(patient.getEmergencycontact())
+                .build();
+    }
+
     public Optional<Patient> findByEmailOrPhone(String email, String phone) {
-        return patientRepository.findByEmailOrPhone(email, phone);
+        try {
+            return patientRepository.findByEmailOrPhone(email, phone);
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Database operation failed while finding patient by email or phone", e);
+        }
     }
 
     public boolean isRegistrationExists(int patientId, int hospitalId) {
-        return hospitalPatientRepository.findByPatientIdAndHospitalId(patientId, hospitalId).isPresent();
+        try {
+            return hospitalPatientRepository.findByPatientIdAndHospitalId(patientId, hospitalId).isPresent();
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Database operation failed while checking if registration exists", e);
+        }
     }
 
-
-    @Transactional
     public Patient update(int id, PatientDTO patientDTO) {
-        Optional<Patient> patientOptional = patientRepository.findById(id);
-
-        if (patientOptional.isPresent()) {
-            Patient patient = patientOptional.get();
-            patient.setAddress(patientDTO.getAddress());
-            patient.setPhone(patientDTO.getPhone());
-            patient.setDateofbirth(patientDTO.getDateofbirth());
-            patient.setFirstname(patientDTO.getFirstname());
-            patient.setLastname(patientDTO.getLastname());
-            patient.setGender(patientDTO.getGender());
-            patient.setEmail(patientDTO.getEmail());
-            patient.setEmergencycontact(patientDTO.getEmergencycontact());
-            return patientRepository.save(patient);
+        if (patientDTO == null) {
+            throw new IllegalArgumentException("PatientDTO must not be null");
         }
 
-        return null;
+        Patient patient = patientRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Patient not found with ID: " + id));
+
+        updatePatientFields(patient, patientDTO);
+        try {
+            return patientRepository.save(patient);
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Database operation failed while updating patient", e);
+        }
+    }
+
+    private void updatePatientFields(Patient patient, PatientDTO patientDTO) {
+        patient.setFirstname(patientDTO.getFirstname());
+        patient.setLastname(patientDTO.getLastname());
+        patient.setDateofbirth(patientDTO.getDateofbirth());
+        patient.setGender(patientDTO.getGender());
+        patient.setAddress(patientDTO.getAddress());
+        patient.setPhone(patientDTO.getPhone());
+        patient.setEmail(patientDTO.getEmail());
+        patient.setEmergencycontact(patientDTO.getEmergencycontact());
     }
 
     public Patient add(PatientDTO patientDTO) {
-        Patient patient = convertToEntity(patientDTO);
-        return patientRepository.save(patient);
+        if (patientDTO == null) {
+            throw new IllegalArgumentException("PatientDTO must not be null");
+        }
+
+        try {
+            Patient patient = convertToEntity(patientDTO);
+            return patientRepository.save(patient);
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to save patient", e);
+        }
     }
 
-    @Transactional
     public boolean delete(int id) {
-        Optional<Patient> patient = patientRepository.findById(id);
-        if (patient.isPresent()) {
-            patientRepository.deleteById(id);
-            return true;
+        try {
+            return patientRepository.findById(id)
+                    .map(patient -> {
+                        patientRepository.deleteById(id);
+                        return true;
+                    })
+                    .orElseGet(() -> {
+                        return false;
+                    });
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to delete patient", e);
         }
-        return false;
     }
 
     private Patient convertToEntity(PatientDTO patientDTO) {
-        try {
             Patient patient = new Patient();
-            patient.setAddress(patientDTO.getAddress());;
+            patient.setAddress(patientDTO.getAddress());
             patient.setDateofbirth(patientDTO.getDateofbirth());
             patient.setPhone(patientDTO.getPhone());
             patient.setFirstname(patientDTO.getFirstname());
@@ -110,37 +176,19 @@ public class PatientService {
             patient.setEmail(patientDTO.getEmail());
             patient.setEmergencycontact(patientDTO.getEmergencycontact());
             return patient;
-        } catch (DataAccessException e) {
-            throw new RuntimeException("Failed to save patient", e);
-        }
     }
 
-    private HospitalResponseDTO convertToHospitalEntity(HospitalResponse2 hospitalResponse2) {
-        try {
-            return new HospitalResponseDTO(hospitalResponse2.getHospitalId(), hospitalResponse2.getName(), hospitalResponse2.getAddress(), hospitalResponse2.getPhone(), hospitalResponse2.getCapacity());
-        } catch (DataAccessException e) {
-            throw new RuntimeException("Failed to save patient", e);
-        }
-    }
-
-    private HospitalPatient convertToHospitalPatientDto(HospitalPatientDTO hospitalpatientDTO) {
-        try {
+    private HospitalPatient convertToHospitalPatient(HospitalPatientDTO hospitalpatientDTO) {
             Patient patient = getById(hospitalpatientDTO.getPatientId());
-
             HospitalResponse2 getHospital = getHospital(hospitalpatientDTO.getHospitalId());
-            HospitalResponseDTO hospital = convertToHospitalEntity(getHospital);
 
             HospitalPatient hospitalpatient = new HospitalPatient();
-            hospitalpatient.setId(hospitalpatientDTO.getId());
             hospitalpatient.setHospitalId(getHospital.getHospitalId());
             hospitalpatient.setPatient(patient);
             hospitalpatient.setDateRegistered(hospitalpatientDTO.getDateRegistered());
             hospitalpatient.setDateDischarged(hospitalpatientDTO.getDateDischarged());
 
             return hospitalpatient;
-        } catch (DataAccessException e) {
-            throw new RuntimeException("Failed to save patient", e);
-        }
     }
 
     public HospitalPatientDTO registerHospital(HospitalPatientDTO hospitalPatientDTO) throws Exception{
@@ -153,10 +201,9 @@ public class PatientService {
             throw new Exception("Hospital not found with ID: " + hospitalPatientDTO.getHospitalId());
         }
 
-        HospitalResponse2 getHospital = getHospital(hospitalPatientDTO.getHospitalId());
-
-        HospitalPatient hospitalpatient = convertToHospitalPatientDto(hospitalPatientDTO);
+        HospitalPatient hospitalpatient = convertToHospitalPatient(hospitalPatientDTO);
         hospitalPatientRepository.save(hospitalpatient);
+
         return hospitalPatientDTO;
     }
 }

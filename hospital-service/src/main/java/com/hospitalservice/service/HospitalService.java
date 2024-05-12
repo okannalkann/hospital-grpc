@@ -1,5 +1,6 @@
 package com.hospitalservice.service;
 
+import com.hospitalservice.exception.HospitalNotFoundException;
 import com.hospitalservice.model.dto.HospitalDTO;
 import com.hospitalservice.model.Hospital;
 import com.hospitalservice.repository.HospitalRepository;
@@ -9,7 +10,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,28 +18,30 @@ public class HospitalService {
 
     @Transactional
     public Hospital update(int id, HospitalDTO hospitalDTO) {
-        Optional<Hospital> hospitalOptional = hospitalRepository.findById(id);
+        Hospital hospital = hospitalRepository.findById(id)
+                .orElseThrow(() -> new HospitalNotFoundException("Hospital with ID " + id + " not found"));
 
-        if (hospitalOptional.isPresent()) {
-            Hospital hospital = hospitalOptional.get();
-            hospital.setName(hospitalDTO.getName());
-            hospital.setAddress(hospitalDTO.getAddress());
-            hospital.setPhone(hospitalDTO.getPhone());
-            hospital.setCapacity(hospitalDTO.getCapacity());
-            return hospitalRepository.save(hospital);
-        }
-
-        return null;
+        hospital.setName(hospitalDTO.getName());
+        hospital.setAddress(hospitalDTO.getAddress());
+        hospital.setPhone(hospitalDTO.getPhone());
+        hospital.setCapacity(hospitalDTO.getCapacity());
+        return hospitalRepository.save(hospital);
     }
 
     @Transactional
     public boolean delete(int id) {
-        Optional<Hospital> hospital = hospitalRepository.findById(id);
-        if (hospital.isPresent()) {
-            hospitalRepository.deleteById(id);
-            return true;
+        try {
+            return hospitalRepository.findById(id)
+                    .map(patient -> {
+                        hospitalRepository.deleteById(id);
+                        return true;
+                    })
+                    .orElseGet(() -> {
+                        return false;
+                    });
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to delete hospital", e);
         }
-        return false;
     }
 
     public Hospital add(HospitalDTO hospitalDTO) {
@@ -55,8 +57,9 @@ public class HospitalService {
         }
     }
 
-    public HospitalDTO getById(int id) {
-        return null;
+    public Hospital getById(int id) {
+        return hospitalRepository.findById(id)
+                .orElseThrow(() -> new HospitalNotFoundException("Hospital not found"));
     }
 
     private Hospital convertToEntity(HospitalDTO hospitalDTO) {
