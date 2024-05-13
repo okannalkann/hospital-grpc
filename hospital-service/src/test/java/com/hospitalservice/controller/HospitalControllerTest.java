@@ -2,23 +2,17 @@ package com.hospitalservice.controller;
 
 import com.hospitalservice.model.Hospital;
 import com.hospitalservice.model.dto.HospitalDTO;
-import com.hospitalservice.model.dto.PatientDTO;
 import com.hospitalservice.repository.HospitalRepository;
 import com.hospitalservice.service.HospitalService;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataAccessException;
-
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class HospitalControllerTest {

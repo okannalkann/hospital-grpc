@@ -1,8 +1,6 @@
 package com.oalkan.patientservice.controller;
 
-import com.oalkan.patientservice.exception.AlreadyExistsException;
 import com.oalkan.patientservice.exception.HospitalNotFoundException;
-import com.oalkan.patientservice.exception.NotFoundException;
 import com.oalkan.patientservice.model.Patient;
 import com.oalkan.patientservice.model.dto.*;
 import com.oalkan.patientservice.response.ApiResponse;
