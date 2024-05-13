@@ -42,7 +42,7 @@ public class HospitalController {
                     .body(new ApiResponse(false, "Hospitals not found"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse(false, "Internal server error"));
+                    .body(new ApiResponse(false, e.getMessage()));
         }
     }
 

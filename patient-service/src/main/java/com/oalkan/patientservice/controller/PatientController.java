@@ -62,7 +62,7 @@ public class PatientController {
                     .body(new ApiResponse(false, "Patient not found"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse(false, "Internal server error"));
+                    .body(new ApiResponse(false, e.getMessage()));
         }
     }
 
@@ -76,7 +76,7 @@ public class PatientController {
                     .body(new ApiResponse(false, "Patient not found"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse(false, "Internal server error"));
+                    .body(new ApiResponse(false, e.getMessage()));
         }
     }
 
