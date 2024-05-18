@@ -1,5 +1,5 @@
 
-# Hospital (localhost:8082/api)
+# Hospital Service(localhost:8082/api)
 
 | Route | HTTP Verb	 | POST body	 | Description	 |
 | --- | --- | --- | --- |
@@ -9,7 +9,7 @@
 | /hospital/{hospital_id} | `PUT` | {"name":"Okanhadern Clinic", "address":"Marchioninistraße 15, 81377 München", "phone":"089 44000", "capacity":10 } | Update a hospital with new info. |
 | /hospital/{hospital_id} | `DELETE` | Empty | Delete a hospital. |
 
-# Patient (localhost:8080/api)
+# Patient Service (localhost:8080/api)
 
 | Route | HTTP Verb	 | POST body	 | Description	 |
 | --- | --- | --- | --- |
