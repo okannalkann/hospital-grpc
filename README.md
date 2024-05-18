@@ -13,7 +13,7 @@
 
 | Route | HTTP Verb	 | POST body	 | Description	 |
 | --- | --- | --- | --- |
-| /patient/1 | `GET` | Empty | Get patient by Id. |
+| /patient/{patient_id} | `GET` | Empty | Get patient by Id. |
 | /patient | `GET` | Empty | List all patients. |
 | /patient/getHospitalPatients/{hospital_id} | `GET` | Empty | Get hospital patients. |
 | /patient/hospitalcheck/{hospital_id} | `GET` | Empty | Check hospital exist. |
